@@ -1,59 +1,81 @@
-import Adafruit_DHT
+import os
+from dotenv import load_dotenv
+import adafruit_dht
+import board
 import time
 import paho.mqtt.publish as mqtt
 import json
 
-broker = '192.168.86.50'
-port = 1883
-topic = "lakeside/garage/atmosphere"
-client_id = 'garage-temp-mqtt-01'
-username = 'mqtt_admin'
-password = 'f2VmlM3pX]W,Yjf'
+load_dotenv()
 
-sensor_data = {'temperature': 0, 'humidity': 0}
-
+dht_device = adafruit_dht.DHT22(board.D4)
 
 def readDHTDevice():
-    DHT_SENSOR = Adafruit_DHT.DHT22
-    DHT_PIN = 4
+  try:
+    temperature = dht_device.temperature
+    humidity = dht_device.humidity
 
-    return Adafruit_DHT.read_retry(DHT_SENSOR, DHT_PIN)
+  except RuntimeError as error:
+    print("readDHTDevice - RuntimeError - {}".format(error.args[0]))
+    time.sleep(2.0)
+    return False
 
+  except Exception as error:
+    print("readDHTDevice - Exception - {}".format(error.args[0]))
+    time.sleep(2.0)
+    return False
 
-def getAtmosphere():
-    attempts = 0
-    while attempts < 3:
-        try:
-            humidity, temperature = readDHTDevice()
-
-            if humidity is not None and temperature is not None and humidity < 150 and temperature < 150:
-                return {'temperature': temperature, 'humidity': humidity}
-            else:
-                print(
-                    "Reading from sensor invalid trying again attempt {} of 3".format(attempts + 1))
-        except Exception as e:
-            print(e)
-
-        attempts += 1
+  return temperature, humidity 
 
 
-starttime = time.time()
+def getReading():
+  for i in range(3):
+    reading = readDHTDevice()
+
+    if reading:
+      temperature, humidity = readDHTDevice()
+
+      if humidity is not None and temperature is not None and humidity < 150 and temperature < 100:
+        return temperature, humidity
+      else:
+        print("Reading from sensor invalid trying again attempt {} of 3".format(attempts + 1))
+        time.sleep(1.0)
+
+  return False
+
+def generateAverage():
+  temperatureCumulative = 0
+  humidityCumulative = 0
+  readingCount = 0
+
+  for i in range(3):
+    reading = getReading()
+    if reading:
+      temperature, humidity = reading
+      temperatureCumulative += temperature
+      humidityCumulative += humidity
+      readingCount += 1
+
+    time.sleep(1.0)
+
+  if readingCount == 0: return False
+  return round(temperatureCumulative / readingCount, 1), round(humidityCumulative / readingCount, 1)
+
 while True:
-    result = getAtmosphere()
+  reading = generateAverage()
 
-    if result:
-        temperature = round(result['temperature'], 1)
-        humidity = round(result['humidity'], 1)
+  if reading:
+    temperature, humidity = reading
 
-        sensor_data['temperature'] = temperature
-        sensor_data['humidity'] = humidity
+    mqtt.single(
+      os.environ['MQTT_TOPIC'],
+      json.dumps({'temperature': temperature, 'humidity': humidity}),
+      hostname=os.environ['MQTT_BROKER_HOST'],
+      port=int(os.environ['MQTT_BROKER_PORT']),
+      client_id=os.environ['MQTT_CLIENT_ID'],
+      auth={'username': os.environ['MQTT_USERNAME'], 'password': os.environ['MQTT_PASSWORD']}
+    )
 
-        mqtt.single(
-            topic,
-            json.dumps(sensor_data),
-            hostname=broker,
-            client_id=client_id,
-            auth={'username': username, 'password': password}
-        )
-
-    time.sleep(300.0 - ((time.time() - starttime) % 300.0))
+    time.sleep(float(os.environ['REFRESH_TIME']))
+  else:
+    time.sleep(100.0)

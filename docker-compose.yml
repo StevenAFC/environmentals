@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  environmentals:
+    build: .
+    environment:
+      - MQTT_BROKER_HOST=${MQTT_BROKER_HOST}
+      - MQTT_BROKER_PORT=${MQTT_BROKER_PORT}
+      - MQTT_TOPIC=${MQTT_TOPIC}
+      - MQTT_CLIENT_ID=${MQTT_CLIENT_ID}
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - REFRESH_TIME=${REFRESH_TIME}
+    devices:
+      - /dev/gpiochip0:/dev/gpiochip0
