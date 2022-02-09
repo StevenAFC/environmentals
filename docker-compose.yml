@@ -1,6 +1,7 @@
 version: "3.9"
 services:
   environmentals:
+    restart: always
     build: .
     environment:
       - MQTT_BROKER_HOST=${MQTT_BROKER_HOST}

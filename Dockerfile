@@ -23,11 +23,13 @@ RUN python3 -m venv /opt/venv
 
 # Install dependencies:
 COPY requirements.txt .
+
 RUN . /opt/venv/bin/activate && pip install -r requirements.txt
 
-
-RUN ls /opt/venv/lib/
-RUN ls /opt/venv/lib/python3.10/site-packages/adafruit_blinka/microcontroller/bcm283x/pulseio/
+# Hack https://github.com/adafruit/Adafruit_Blinka/issues/547
+RUN wget https://github.com/adafruit/Adafruit_Blinka/raw/main/src/adafruit_blinka/microcontroller/bcm283x/pulseio/libgpiod_pulsein64
+RUN cp libgpiod_pulsein64 /opt/venv/lib/python3.10/site-packages/adafruit_blinka/microcontroller/bcm283x/pulseio/libgpiod_pulsein64
+RUN chmod u=rwx,g=rwx,o=rwx /opt/venv/lib/python3.10/site-packages/adafruit_blinka/microcontroller/bcm283x/pulseio/libgpiod_pulsein64
 
 # Run the application:
 COPY main.py .
