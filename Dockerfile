@@ -1,14 +1,5 @@
 FROM python:latest
 
-# Environmental Variables
-ENV MQTT_BROKER_HOST=
-ENV MQTT_BROKER_PORT 1883
-ENV MQTT_TOPIC=
-ENV MQTT_CLIENT_ID=
-ENV MQTT_USERNAME=
-ENV MQTT_PASSWORD=
-ENV REFRESH_TIME 300
-
 #python docker using Debian, adding raspbian respository to download gpiod. 
 RUN echo 'deb http://raspbian.raspberrypi.org/raspbian/ bullseye main contrib non-free rpi' >> /etc/apt/sources.list
 
@@ -25,6 +16,8 @@ RUN python3 -m venv /opt/venv
 COPY requirements.txt .
 
 RUN . /opt/venv/bin/activate && pip install -r requirements.txt
+
+RUN ls /opt/venv/lib/python3.10/site-packages/adafruit_blinka/microcontroller/bcm283x/pulseio/
 
 # Hack https://github.com/adafruit/Adafruit_Blinka/issues/547
 RUN wget https://github.com/adafruit/Adafruit_Blinka/raw/main/src/adafruit_blinka/microcontroller/bcm283x/pulseio/libgpiod_pulsein64

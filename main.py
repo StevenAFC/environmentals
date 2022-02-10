@@ -10,6 +10,8 @@ load_dotenv()
 
 dht_device = adafruit_dht.DHT22(board.D4)
 
+print("Environmentals initialized.")
+
 def readDHTDevice():
   try:
     temperature = dht_device.temperature
@@ -78,4 +80,4 @@ while True:
 
     time.sleep(float(os.environ['REFRESH_TIME']))
   else:
-    time.sleep(100.0)
+    time.sleep(60.0)
